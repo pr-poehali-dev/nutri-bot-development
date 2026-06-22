@@ -110,8 +110,33 @@ def handler(event: dict, context) -> dict:
         method='POST'
     )
 
-    with urllib.request.urlopen(req, timeout=25) as resp:
-        openai_data = json.loads(resp.read().decode('utf-8'))
+    try:
+        with urllib.request.urlopen(req, timeout=25) as resp:
+            openai_data = json.loads(resp.read().decode('utf-8'))
+    except urllib.error.HTTPError as e:
+        err_body = e.read().decode('utf-8', errors='replace')
+        try:
+            err_json = json.loads(err_body)
+            openai_msg = err_json.get('error', {}).get('message', err_body)
+        except Exception:
+            openai_msg = err_body
+
+        if e.code == 401:
+            user_msg = 'Неверный ключ OpenAI. Проверь OPENAI_API_KEY в настройках проекта.'
+        elif e.code == 403:
+            user_msg = f'Доступ запрещён OpenAI (403). Возможно ключ заблокирован или не имеет прав на gpt-4o. Детали: {openai_msg}'
+        elif e.code == 429:
+            user_msg = 'Превышен лимит запросов OpenAI. Подожди немного и попробуй снова.'
+        elif e.code == 402:
+            user_msg = 'Недостаточно средств на балансе OpenAI. Пополни счёт на platform.openai.com'
+        else:
+            user_msg = f'Ошибка OpenAI {e.code}: {openai_msg}'
+
+        return {
+            'statusCode': 502,
+            'headers': CORS,
+            'body': json.dumps({'error': user_msg}, ensure_ascii=False)
+        }
 
     raw_text = openai_data['choices'][0]['message']['content'].strip()
 
