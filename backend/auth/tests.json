@@ -1,0 +1,18 @@
+{
+  "tests": [
+    {
+      "name": "OPTIONS preflight",
+      "method": "OPTIONS",
+      "path": "/",
+      "expectedStatus": 200
+    },
+    {
+      "name": "Dev login (no token configured)",
+      "method": "POST",
+      "path": "/",
+      "body": {"initData": "dev_test"},
+      "expectedStatus": 200,
+      "expectedStatus": 200
+    }
+  ]
+}
