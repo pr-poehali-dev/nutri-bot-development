@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import Icon from '@/components/ui/icon';
 
 const FOOD_IMG =
@@ -64,14 +65,15 @@ const Index = () => {
             <a href="#how" className="transition-colors hover:text-foreground">Как работает</a>
             <a href="#diary" className="transition-colors hover:text-foreground">Дневник</a>
             <a href="#ai" className="transition-colors hover:text-foreground">AI-советы</a>
+            <Link to="/profile" className="transition-colors hover:text-foreground">Норма КБЖУ</Link>
           </nav>
-          <a
-            href="#"
+          <Link
+            to="/profile"
             className="flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition-all hover:opacity-90"
           >
-            <Icon name="Send" size={16} />
-            Открыть бота
-          </a>
+            <Icon name="Calculator" size={16} />
+            Рассчитать норму
+          </Link>
         </div>
       </header>
 
@@ -93,13 +95,13 @@ const Index = () => {
               подскажет, как скорректировать рацион под твою цель.
             </p>
             <div className="mt-9 flex flex-wrap items-center gap-4">
-              <a
-                href="#"
+              <Link
+                to="/profile"
                 className="flex items-center gap-2 rounded-full bg-primary px-7 py-3.5 text-base font-semibold text-primary-foreground transition-all hover:opacity-90 hover-scale"
               >
                 <Icon name="Send" size={18} />
                 Начать бесплатно
-              </a>
+              </Link>
               <a
                 href="#how"
                 className="flex items-center gap-2 rounded-full border border-border bg-card px-7 py-3.5 text-base font-semibold transition-colors hover:bg-muted"
