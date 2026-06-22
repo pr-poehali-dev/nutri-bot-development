@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import Icon from '@/components/ui/icon';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -20,7 +20,86 @@ const GOALS: { value: Goal; label: string; icon: string; factor: number }[] = [
   { value: 'gain', label: 'Набрать массу', icon: 'TrendingUp', factor: 1.15 },
 ];
 
+const NumericField = ({
+  label,
+  value,
+  setValue,
+  unit,
+  min,
+  max,
+  step = 1,
+}: {
+  label: string;
+  value: number;
+  setValue: (n: number) => void;
+  unit: string;
+  min: number;
+  max: number;
+  step?: number;
+}) => {
+  const [inputVal, setInputVal] = useState(String(value));
+
+  useEffect(() => { setInputVal(String(value)); }, [value]);
+
+  const clamp = (n: number) => Math.min(max, Math.max(min, n));
+
+  const handleBlur = () => {
+    const parsed = parseFloat(inputVal);
+    if (!isNaN(parsed)) setValue(clamp(parsed));
+    else setInputVal(String(value));
+  };
+
+  const handleKey = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
+  };
+
+  return (
+    <div className="rounded-2xl border border-border bg-card p-5">
+      <div className="mb-4 text-sm font-semibold text-muted-foreground">{label}</div>
+      <div className="flex items-center gap-2">
+        <button
+          onClick={() => setValue(clamp(value - step))}
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-border bg-muted text-lg font-bold transition-colors hover:bg-secondary"
+        >−</button>
+        <div className="relative flex-1">
+          <input
+            type="number"
+            value={inputVal}
+            min={min}
+            max={max}
+            step={step}
+            onChange={(e) => setInputVal(e.target.value)}
+            onBlur={handleBlur}
+            onKeyDown={handleKey}
+            className="w-full rounded-xl border border-input bg-background px-3 py-2.5 text-center text-2xl font-extrabold tracking-tight outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+          />
+        </div>
+        <button
+          onClick={() => setValue(clamp(value + step))}
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-border bg-muted text-lg font-bold transition-colors hover:bg-secondary"
+        >+</button>
+      </div>
+      <div className="mt-3">
+        <input
+          type="range"
+          min={min}
+          max={max}
+          step={step}
+          value={value}
+          onChange={(e) => setValue(Number(e.target.value))}
+          className="h-2 w-full cursor-pointer appearance-none rounded-full bg-muted accent-primary"
+        />
+        <div className="mt-1 flex justify-between text-xs text-muted-foreground">
+          <span>{min} {unit}</span>
+          <span>{max} {unit}</span>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const Profile = () => {
+  const navigate = useNavigate();
   const { user, profile, loading, saving, saved, saveProfile } = useAuth();
 
   const [gender, setGender] = useState<Gender>('male');
@@ -52,10 +131,9 @@ const Profile = () => {
   const fat = Math.round((calories * 0.3) / 9);
   const carbs = Math.round((calories * 0.4) / 4);
 
-  const handleSave = () => {
-    saveProfile({
-      gender,
-      age,
+  const handleSave = async () => {
+    const ok = await saveProfile({
+      gender, age,
       height_cm: height,
       weight_kg: weight,
       activity_factor: activity,
@@ -65,41 +143,8 @@ const Profile = () => {
       fat_goal: fat,
       carbs_goal: carbs,
     });
+    if (ok) setTimeout(() => navigate('/dashboard'), 1200);
   };
-
-  const Field = ({
-    label,
-    value,
-    setValue,
-    unit,
-    min,
-    max,
-  }: {
-    label: string;
-    value: number;
-    setValue: (n: number) => void;
-    unit: string;
-    min: number;
-    max: number;
-  }) => (
-    <div className="rounded-2xl border border-border bg-card p-5">
-      <div className="mb-3 flex items-baseline justify-between">
-        <span className="text-sm font-medium text-muted-foreground">{label}</span>
-        <span className="text-2xl font-extrabold tracking-tight">
-          {value}
-          <span className="ml-1 text-sm font-medium text-muted-foreground">{unit}</span>
-        </span>
-      </div>
-      <input
-        type="range"
-        min={min}
-        max={max}
-        value={value}
-        onChange={(e) => setValue(Number(e.target.value))}
-        className="h-2 w-full cursor-pointer appearance-none rounded-full bg-muted accent-primary"
-      />
-    </div>
-  );
 
   return (
     <div className="min-h-screen bg-background font-sans text-foreground">
@@ -125,11 +170,11 @@ const Profile = () => {
               </div>
             )}
             <Link
-              to="/"
+              to="/dashboard"
               className="flex items-center gap-2 rounded-full border border-border bg-card px-5 py-2.5 text-sm font-semibold transition-colors hover:bg-muted"
             >
-              <Icon name="ArrowLeft" size={16} />
-              На главную
+              <Icon name="LayoutDashboard" size={16} />
+              Дашборд
             </Link>
           </div>
         </div>
@@ -145,7 +190,7 @@ const Profile = () => {
             Рассчитай свою норму КБЖУ
           </h1>
           <p className="mt-4 text-lg text-muted-foreground">
-            Укажи параметры — расчёт обновляется мгновенно по формуле Миффлина-Сан Жеора.
+            Введи параметры вручную или ползунком — расчёт обновляется мгновенно.
           </p>
         </div>
 
@@ -184,9 +229,9 @@ const Profile = () => {
               </div>
 
               <div className="grid gap-4 sm:grid-cols-3">
-                <Field label="Возраст" value={age} setValue={setAge} unit="лет" min={14} max={90} />
-                <Field label="Рост" value={height} setValue={setHeight} unit="см" min={130} max={220} />
-                <Field label="Вес" value={weight} setValue={setWeight} unit="кг" min={35} max={180} />
+                <NumericField label="Возраст" value={age} setValue={setAge} unit="лет" min={14} max={90} />
+                <NumericField label="Рост" value={height} setValue={setHeight} unit="см" min={130} max={220} />
+                <NumericField label="Вес" value={weight} setValue={(v) => setWeight(parseFloat(v.toFixed(1)))} unit="кг" min={35} max={180} step={0.5} />
               </div>
 
               <div>
@@ -248,9 +293,7 @@ const Profile = () => {
                     <div key={label as string}>
                       <div className="mb-1.5 flex items-center justify-between text-sm">
                         <span className="font-medium">{label}</span>
-                        <span className="font-bold">
-                          {val} {unit} · {pct}%
-                        </span>
+                        <span className="font-bold">{val} {unit} · {pct}%</span>
                       </div>
                       <div className="h-2.5 w-full overflow-hidden rounded-full bg-muted">
                         <div
@@ -265,10 +308,7 @@ const Profile = () => {
                 <div className="mt-7 rounded-2xl bg-secondary p-4 text-sm text-secondary-foreground">
                   <div className="flex items-start gap-2">
                     <Icon name="Sparkles" size={16} className="mt-0.5 shrink-0 text-primary" />
-                    <span>
-                      AI подберёт меню под эту норму. Базовый обмен:{' '}
-                      <b>{Math.round(bmr)} ккал</b>.
-                    </span>
+                    <span>Базовый обмен: <b>{Math.round(bmr)} ккал</b>. AI подберёт меню под эту норму.</span>
                   </div>
                 </div>
 
@@ -282,28 +322,13 @@ const Profile = () => {
                   }`}
                 >
                   {saving ? (
-                    <>
-                      <Icon name="Loader" size={18} className="animate-spin" />
-                      Сохраняем…
-                    </>
+                    <><Icon name="Loader" size={18} className="animate-spin" />Сохраняем…</>
                   ) : saved ? (
-                    <>
-                      <Icon name="CheckCircle" size={18} />
-                      Норма сохранена!
-                    </>
+                    <><Icon name="CheckCircle" size={18} />Сохранено! Переходим…</>
                   ) : (
-                    <>
-                      <Icon name="Check" size={18} />
-                      Сохранить норму
-                    </>
+                    <><Icon name="Check" size={18} />Сохранить и открыть профиль</>
                   )}
                 </button>
-
-                {saved && (
-                  <p className="mt-3 text-center text-xs text-muted-foreground">
-                    Бот запомнил твою норму и будет следить за рационом
-                  </p>
-                )}
               </div>
             </div>
           </div>
